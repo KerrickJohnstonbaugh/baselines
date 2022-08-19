@@ -96,8 +96,12 @@ def learn(*, network, env, total_timesteps,
     save_path=None,
     **kwargs
 ):
+    if override_params is not None:
+        with open(override_params,'r') as f:
+            override_params = json.load(f)
+    else:
+        override_params = None
 
-    override_params = override_params or {}
     if MPI is not None:
         rank = MPI.COMM_WORLD.Get_rank()
         num_cpu = MPI.COMM_WORLD.Get_size()
