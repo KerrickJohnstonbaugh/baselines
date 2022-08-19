@@ -37,8 +37,8 @@ DEFAULT_PARAMS = {
     'n_test_rollouts': 10,  # number of test rollouts per epoch, each consists of rollout_batch_size rollouts
     'test_with_polyak': False,  # run test episodes with the target network
     # exploration
-    'random_eps': 0.3,  # percentage of time a random action is taken
-    'noise_eps': 0.2,  # std of gaussian noise added to not-completely-random actions as a percentage of max_u
+    'random_eps': 0.4,  # percentage of time a random action is taken
+    'noise_eps': 0.4,  # std of gaussian noise added to not-completely-random actions as a percentage of max_u
     # HER
     'replay_strategy': 'future',  # supported modes: future, none
     'replay_k': 4,  # number of additional goals used for replay, only used if off_policy_data=future
@@ -129,6 +129,8 @@ def configure_her(params):
     env.reset()
 
     def reward_fun(ag_2, g, info):  # vectorized
+        # print(info.keys())
+        # input('wait')
         return env.compute_reward(achieved_goal=ag_2, desired_goal=g, info=info)
 
     # Prepare configuration for HER.
@@ -189,10 +191,15 @@ def configure_dims(params):
     obs, _, _, info = env.step(env.action_space.sample())
 
     dims = {
-        'o': obs['observation'].shape[0],
+        'o': obs.shape[0],
         'u': env.action_space.shape[0],
-        'g': obs['desired_goal'].shape[0],
+        'g': 1,
     }
+    # dims = {
+    #     'o': obs['observation'].shape[0],
+    #     'u': env.action_space.shape[0],
+    #     'g': obs['desired_goal'].shape[0],
+    # }
     for key, value in info.items():
         value = np.array(value)
         if value.ndim == 0:

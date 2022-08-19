@@ -77,12 +77,15 @@ class DDPG(object):
         for key in sorted(self.input_dims.keys()):
             if key.startswith('info_'):
                 continue
+            #print(key)
             stage_shapes[key] = (None, *input_shapes[key])
         for key in ['o', 'g']:
             stage_shapes[key + '_2'] = stage_shapes[key]
         stage_shapes['r'] = (None,)
         self.stage_shapes = stage_shapes
 
+        # print(f'stage shapes {self.stage_shapes}')
+        # input('wait')
         # Create network.
         with tf.variable_scope(self.scope):
             self.staging_tf = StagingArea(
@@ -99,6 +102,9 @@ class DDPG(object):
                          for key, val in input_shapes.items()}
         buffer_shapes['g'] = (buffer_shapes['g'][0], self.dimg)
         buffer_shapes['ag'] = (self.T, self.dimg)
+        buffer_shapes['r'] = (self.T-1,)
+        # print(buffer_shapes)
+        # input('wait')
 
         buffer_size = (self.buffer_size // self.rollout_batch_size) * self.rollout_batch_size
         self.buffer = ReplayBuffer(buffer_shapes, buffer_size, self.T, self.sample_transitions)
@@ -117,11 +123,13 @@ class DDPG(object):
             g = self.subtract_goals(g, ag)
             g = g.reshape(*g_shape)
         o = np.clip(o, -self.clip_obs, self.clip_obs)
-        g = np.clip(g, -self.clip_obs, self.clip_obs)
+        
+        #g = np.clip(g, -self.clip_obs, self.clip_obs)
         return o, g
 
     def step(self, obs):
-        actions = self.get_actions(obs['observation'], obs['achieved_goal'], obs['desired_goal'])
+        #actions = self.get_actions(obs['observation'], obs['achieved_goal'], obs['desired_goal'])
+        actions = self.get_actions(obs, None, None)
         return actions, None, None, None
 
 
@@ -136,7 +144,7 @@ class DDPG(object):
         # feed
         feed = {
             policy.o_tf: o.reshape(-1, self.dimo),
-            policy.g_tf: g.reshape(-1, self.dimg),
+            #policy.g_tf: g.reshape(-1, self.dimg),
             policy.u_tf: np.zeros((o.size // self.dimo, self.dimu), dtype=np.float32)
         }
 
@@ -158,7 +166,8 @@ class DDPG(object):
             return ret
 
     def init_demo_buffer(self, demoDataFile, update_stats=True): #function that initializes the demo buffer
-
+        # print('init demo buffer')
+        # input('wait')
         demoData = np.load(demoDataFile) #load the demonstration data from data file
         info_keys = [key.replace('info_', '') for key in self.input_dims.keys() if key.startswith('info_')]
         info_values = [np.empty((self.T - 1, 1, self.input_dims['info_' + key]), np.float32) for key in info_keys]
@@ -234,10 +243,10 @@ class DDPG(object):
             # No need to preprocess the o_2 and g_2 since this is only used for stats
 
             self.o_stats.update(transitions['o'])
-            self.g_stats.update(transitions['g'])
+            #self.g_stats.update(transitions['g'])
 
             self.o_stats.recompute_stats()
-            self.g_stats.recompute_stats()
+            #self.g_stats.recompute_stats()
 
     def get_current_buffer_size(self):
         return self.buffer.get_current_size()
@@ -346,7 +355,7 @@ class DDPG(object):
                 vs.reuse_variables()
             target_batch_tf = batch_tf.copy()
             target_batch_tf['o'] = batch_tf['o_2']
-            target_batch_tf['g'] = batch_tf['g_2']
+            #target_batch_tf['g'] = batch_tf['g_2']
             self.target = self.create_actor_critic(
                 target_batch_tf, net_type='target', **self.__dict__)
             vs.reuse_variables()
