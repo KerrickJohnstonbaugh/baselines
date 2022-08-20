@@ -13,6 +13,7 @@ from baselines.common.cmd_util import common_arg_parser, parse_unknown_args, mak
 from baselines.common.tf_util import get_session
 from baselines import logger
 from importlib import import_module
+import json
 
 try:
     from mpi4py import MPI
@@ -60,6 +61,15 @@ def train(args, extra_args):
     learn = get_learn_function(args.alg)
     alg_kwargs = get_learn_function_defaults(args.alg, env_type)
     alg_kwargs.update(extra_args)
+
+    override_params = args.override_params
+    if override_params is not None:
+        with open(override_params,'r') as f:
+            override_params = json.load(f)
+    else:
+        override_params = {}
+
+    alg_kwargs.update(override_params)
 
     env = build_env(args)
     if args.save_video_interval != 0:
