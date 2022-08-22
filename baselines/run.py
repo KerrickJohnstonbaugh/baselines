@@ -14,6 +14,7 @@ from baselines.common.tf_util import get_session
 from baselines import logger
 from importlib import import_module
 import json
+import NHT_envs.NHT_half_cheetah_v4
 
 try:
     from mpi4py import MPI
@@ -50,6 +51,13 @@ _game_envs['retro'] = {
     'SpaceInvaders-Snes',
 }
 
+def get_env_kwargs(extra_args):
+    print(extra_args)
+    kwargs = {}
+    kwargs['action_dim'] = extra_args['action_dim']
+    kwargs['NHT_path'] = extra_args['NHT_path']
+
+    return kwargs
 
 def train(args, extra_args):
     env_type, env_id = get_env_type(args)
@@ -60,7 +68,7 @@ def train(args, extra_args):
 
     learn = get_learn_function(args.alg)
     alg_kwargs = get_learn_function_defaults(args.alg, env_type)
-    alg_kwargs.update(extra_args)
+    #alg_kwargs.update(extra_args)
 
     override_params = args.override_params
     if override_params is not None:
@@ -71,7 +79,7 @@ def train(args, extra_args):
 
     alg_kwargs.update(override_params)
 
-    env = build_env(args)
+    env = build_env(args,extra_args)
     if args.save_video_interval != 0:
         env = VecVideoRecorder(env, osp.join(logger.get_dir(), "videos"), record_video_trigger=lambda x: x % args.save_video_interval == 0, video_length=args.save_video_length)
 
@@ -93,7 +101,7 @@ def train(args, extra_args):
     return model, env
 
 
-def build_env(args):
+def build_env(args, extra_args):
     ncpu = multiprocessing.cpu_count()
     if sys.platform == 'darwin': ncpu //= 2
     nenv = args.num_env or ncpu
@@ -119,8 +127,10 @@ def build_env(args):
         config.gpu_options.allow_growth = True
         get_session(config=config)
 
+        env_kwargs = get_env_kwargs(extra_args)
+
         flatten_dict_observations = alg not in {'her'}
-        env = make_vec_env(env_id, env_type, args.num_env or 1, seed, reward_scale=args.reward_scale, flatten_dict_observations=flatten_dict_observations)
+        env = make_vec_env(env_id, env_type, args.num_env or 1, seed, env_kwargs=env_kwargs, reward_scale=args.reward_scale, flatten_dict_observations=flatten_dict_observations)
 
         if env_type == 'mujoco':
             env = VecNormalize(env, use_tf=True)
@@ -231,6 +241,13 @@ def main(args):
 
     if args.play:
         logger.log("Running trained model")
+        if args.get_demos:
+            logger.log("Collecting Demonstrations")
+            num_transitions = 0
+            episode_steps = 0
+            demo_data = []
+            traj_data = []
+
         obs = env.reset()
 
         state = model.initial_state if hasattr(model, 'initial_state') else None
@@ -243,15 +260,31 @@ def main(args):
             else:
                 actions, _, _, _ = model.step(obs)
 
+            if args.get_demos:
+                if num_transitions < args.demo_samples:
+                    traj_data.append({"obs":obs[0].tolist(),"q_double_dot":actions[0].tolist()})
+                    episode_steps += 1
+                else:
+                    break
             obs, rew, done, _ = env.step(actions)
             episode_rew += rew
             env.render()
             done_any = done.any() if isinstance(done, np.ndarray) else done
             if done_any:
+                if args.get_demos:
+                    if episode_rew >= args.return_threshold:
+                        print('Return threshold met!')
+                        demo_data.append(traj_data)
+                        num_transitions += episode_steps
+                    episode_steps = 0
+                    traj_data = []
                 for i in np.nonzero(done)[0]:
                     print('episode_rew={}'.format(episode_rew[i]))
                     episode_rew[i] = 0
 
+        if args.get_demos:
+            with open(args.demo_save_path + '-demo_data-' + str(args.demo_samples) + '_transitions.json','w+') as outfile:
+                json.dump(demo_data, outfile)
     env.close()
 
     return model
