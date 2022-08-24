@@ -51,15 +51,17 @@ _game_envs['retro'] = {
     'SpaceInvaders-Snes',
 }
 
-def get_env_kwargs(extra_args):
-    print(extra_args)
+def get_env_kwargs(args):
+    print('\n\n env kwargs')
+    print(args)
     kwargs = {}
-    kwargs['action_dim'] = extra_args['action_dim']
-    kwargs['NHT_path'] = extra_args['NHT_path']
+    kwargs['action_dim'] = args.action_dim
+    kwargs['NHT_path'] = args.NHT_path
 
     return kwargs
 
 def train(args, extra_args):
+    print('\n\n in train \n\n')
     env_type, env_id = get_env_type(args)
     print('env_type: {}'.format(env_type))
 
@@ -68,7 +70,7 @@ def train(args, extra_args):
 
     learn = get_learn_function(args.alg)
     alg_kwargs = get_learn_function_defaults(args.alg, env_type)
-    #alg_kwargs.update(extra_args)
+    alg_kwargs.update(extra_args)
 
     override_params = args.override_params
     if override_params is not None:
@@ -127,7 +129,7 @@ def build_env(args, extra_args):
         config.gpu_options.allow_growth = True
         get_session(config=config)
 
-        env_kwargs = get_env_kwargs(extra_args)
+        env_kwargs = get_env_kwargs(args) if args.interface_env else {}
 
         flatten_dict_observations = alg not in {'her'}
         env = make_vec_env(env_id, env_type, args.num_env or 1, seed, env_kwargs=env_kwargs, reward_scale=args.reward_scale, flatten_dict_observations=flatten_dict_observations)
@@ -283,7 +285,7 @@ def main(args):
                     episode_rew[i] = 0
 
         if args.get_demos:
-            with open(args.demo_save_path + '-demo_data-' + str(args.demo_samples) + '_transitions.json','w+') as outfile:
+            with open(args.demo_save_path + '-demo_data-' + str(args.demo_samples) + '.json','w+') as outfile:
                 json.dump(demo_data, outfile)
     env.close()
 

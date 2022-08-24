@@ -177,6 +177,11 @@ def common_arg_parser():
     parser.add_argument('--demo_save_path', help='Path to save demonstrations to', default=None, type=str)
     parser.add_argument('--demo_samples', help='Number of demo samples. Default: 2000', default=2000, type=int)
     parser.add_argument('--return_threshold', help='Threshold return for saving demo episodes. Default: 0', default=0.0, type=float)
+    parser.add_argument('--interface_env', default=False, action='store_true')
+    parser.add_argument('--action_dim', type=int, default=2)
+    #parser.add_argument('--cond_dim', type=int, default=10)
+    #parser.add_argument('--u_dim', type=int, default=7)
+    parser.add_argument('--NHT_path', type=str, default=None)
     return parser
 
 def robotics_arg_parser():
