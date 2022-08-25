@@ -108,6 +108,11 @@ def learn(*, network, env, total_timesteps, eval_env = None, seed=None, nsteps=2
                     nsteps=nsteps, ent_coef=ent_coef, vf_coef=vf_coef,
                     max_grad_norm=max_grad_norm, comm=comm, mpi_rank_weight=mpi_rank_weight)
 
+    if getattr(env.envs[0], "reload_map_model"):
+        for env_instance in env.envs:
+            env_instance.reload_map_model()
+
+
     if load_path is not None:
         model.load(load_path)
     # Instantiate the runner object
