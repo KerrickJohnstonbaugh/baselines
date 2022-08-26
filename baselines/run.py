@@ -16,6 +16,7 @@ from importlib import import_module
 import json
 import NHT_envs.NHT_half_cheetah_v4
 import NHT_envs.LASER_half_cheetah_v4
+import NHT_envs.SVD_half_cheetah_v4
 
 try:
     from mpi4py import MPI
