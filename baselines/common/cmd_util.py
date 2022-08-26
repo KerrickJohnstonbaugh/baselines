@@ -181,7 +181,7 @@ def common_arg_parser():
     parser.add_argument('--action_dim', type=int, default=2)
     #parser.add_argument('--cond_dim', type=int, default=10)
     #parser.add_argument('--u_dim', type=int, default=7)
-    parser.add_argument('--NHT_path', type=str, default=None)
+    parser.add_argument('--interface_model_path', type=str, default=None)
     return parser
 
 def robotics_arg_parser():

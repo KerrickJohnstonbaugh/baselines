@@ -15,6 +15,7 @@ from baselines import logger
 from importlib import import_module
 import json
 import NHT_envs.NHT_half_cheetah_v4
+import NHT_envs.LASER_half_cheetah_v4
 
 try:
     from mpi4py import MPI
@@ -56,7 +57,7 @@ def get_env_kwargs(args):
     print(args)
     kwargs = {}
     kwargs['action_dim'] = args.action_dim
-    kwargs['NHT_path'] = args.NHT_path
+    kwargs['interface_model_path'] = args.interface_model_path
 
     return kwargs
 
