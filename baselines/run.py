@@ -264,6 +264,9 @@ def main(args):
             else:
                 actions, _, _, _ = model.step(obs)
 
+            if args.clip_demo_actions:
+                actions[0] = np.clip(actions[0], env.action_space.low, env.action_space.high)
+
             if args.get_demos:
                 if num_transitions < args.demo_samples:
                     traj_data.append({"obs":obs[0].tolist(),"q_double_dot":actions[0].tolist()})
